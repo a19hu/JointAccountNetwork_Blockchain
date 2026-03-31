@@ -23,6 +23,7 @@ function exponentialSample(mean) {
 }
 
 function pickPreferential(maxNode, degrees) {
+  // Preferential attachment: nodes with higher degree are more likely to receive new links.
   let total = 0;
   for (let i = 1; i <= maxNode; i++) {
     total += degrees[i];
@@ -65,6 +66,7 @@ function generateConnectedPowerLawEdges(nodeCount, m) {
     return true;
   };
 
+  // Seed the graph with one edge so every later node can attach into a connected component.
   addEdge(1, 2);
 
   for (let newNode = 3; newNode <= nodeCount; newNode++) {
@@ -93,6 +95,7 @@ function degreeHistogram(degrees) {
 }
 
 function approximatePowerLawGamma(hist) {
+  // Estimate gamma by fitting a line to log(degree) vs log(count).
   const points = hist.filter(([k, cnt]) => k > 0 && cnt > 0);
   if (points.length < 2) {
     return null;
@@ -140,6 +143,7 @@ module.exports = async function (callback) {
 
     let totalCombinedBalance = 0;
     for (const [u, v] of edges) {
+      // Draw channel liquidity from an exponential distribution, then split equally.
       let combined = Math.round(exponentialSample(MEAN_BALANCE));
       if (combined < 2) {
         combined = 2;
@@ -164,6 +168,7 @@ module.exports = async function (callback) {
     let totalGasUsed = 0;
 
     for (let i = 0; i < TRANSACTION_COUNT; i++) {
+      // Each run samples a random source and destination to stress routing behavior.
       const from = randomInt(1, NUM_USERS);
       let to = randomInt(1, NUM_USERS);
       while (to === from) {
@@ -198,6 +203,7 @@ module.exports = async function (callback) {
     const hist = degreeHistogram(degrees);
     const gamma = approximatePowerLawGamma(hist);
 
+    // Summarize both graph structure and transaction outcomes for the report.
     const report = {
       usersRegistered: NUM_USERS,
       jointAccountsCreated: edges.length,

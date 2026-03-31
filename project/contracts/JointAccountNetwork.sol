@@ -2,12 +2,14 @@
 pragma solidity ^0.8.21;
 
 contract JointAccountNetwork {
+    // Each user stores adjacency information so routing can be done on-chain.
     struct User {
         bool exists;
         string name;
         uint256[] neighbors;
     }
 
+    // A channel is stored once using sorted user ids and keeps each side's current claim.
     struct Channel {
         bool exists;
         uint256 userA;
@@ -56,6 +58,7 @@ contract JointAccountNetwork {
         (uint256 low, uint256 high, bool firstIsLow) = _orderedUsers(userId1, userId2);
         require(!channels[low][high].exists, "Account already exists");
 
+        // Persist the channel in canonical order so either caller ordering maps to one slot.
         channels[low][high] = Channel({
             exists: true,
             userA: low,
@@ -74,13 +77,16 @@ contract JointAccountNetwork {
         require(amount > 0, "Amount must be > 0");
         require(users[fromUserId].exists && users[toUserId].exists, "User not found");
 
+        // Route over the shortest available user path in the current account graph.
         uint256[] memory path = _getShortestPath(fromUserId, toUserId);
         require(path.length > 0, "No path found");
 
+        // All hops must be able to forward the full amount or the transfer reverts.
         for (uint256 i = 0; i + 1 < path.length; i++) {
             require(_balanceOf(path[i], path[i + 1], path[i]) >= amount, "Insufficient balance on path");
         }
 
+        // Settlement is hop-by-hop: the sender side decreases and the receiver side increases.
         for (uint256 i = 0; i + 1 < path.length; i++) {
             _transferOnChannel(path[i], path[i + 1], amount);
         }
@@ -140,6 +146,7 @@ contract JointAccountNetwork {
         uint256 userId1,
         uint256 userId2
     ) private pure returns (uint256 low, uint256 high, bool firstIsLow) {
+        // The boolean remembers whether the first argument already matched canonical order.
         if (userId1 < userId2) {
             return (userId1, userId2, true);
         }
@@ -179,6 +186,7 @@ contract JointAccountNetwork {
         uint256[] storage list = users[userId].neighbors;
         for (uint256 i = 0; i < list.length; i++) {
             if (list[i] == neighborId) {
+                // Swap-and-pop keeps removal O(1) once the element is found.
                 list[i] = list[list.length - 1];
                 list.pop();
                 return;
@@ -211,6 +219,7 @@ contract JointAccountNetwork {
         int256[] memory parent = _initParent(n);
         uint256[] memory queue = new uint256[](n);
 
+        // Standard BFS over the user graph to recover the minimum-hop path.
         uint256 head = 0;
         uint256 tail = 1;
         visited[fromIdx] = true;
@@ -255,6 +264,7 @@ contract JointAccountNetwork {
         uint256[] memory queue,
         uint256 tail
     ) private view returns (uint256 updatedTail, bool found) {
+        // Expand one BFS frontier layer while storing parent pointers for reconstruction.
         updatedTail = tail;
         for (uint256 i = 0; i < nbrs.length; i++) {
             uint256 idxPlusOne = userIndexPlusOne[nbrs[i]];
@@ -284,6 +294,7 @@ contract JointAccountNetwork {
         uint256 toIdx,
         int256[] memory parent
     ) private view returns (uint256[] memory) {
+        // Count path length first, then rebuild it backwards through parent pointers.
         uint256 pathLen = 1;
         int256 cursor = int256(toIdx);
 

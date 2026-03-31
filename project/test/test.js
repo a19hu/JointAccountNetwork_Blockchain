@@ -4,6 +4,7 @@ contract("JointAccountNetwork", function () {
   let network;
 
   beforeEach(async function () {
+    // Deploy a fresh instance so each test runs with isolated state.
     network = await JointAccountNetwork.new();
   });
 
@@ -60,6 +61,7 @@ contract("JointAccountNetwork", function () {
       await network.sendAmount(1, 3, 11);
       assert.fail("Expected sendAmount to revert");
     } catch (err) {
+      // Truffle surfaces Solidity reverts as JavaScript errors containing the reason string.
       assert.include(err.message, "Insufficient balance on path");
     }
 
@@ -78,6 +80,7 @@ contract("JointAccountNetwork", function () {
 
     await network.closeAccount(2, 3);
 
+    // After closing one edge, node 3 is disconnected from node 1.
     const path = await network.getShortestPath(1, 3);
     assert.equal(path.length, 0);
 
