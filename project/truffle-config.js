@@ -45,30 +45,6 @@
 // const { MNEMONIC, PROJECT_ID } = process.env;
 
 // const HDWalletProvider = require('@truffle/hdwallet-provider');
-const ganache = require("/usr/lib/node_modules/ganache");
-
-const DEVELOPMENT_MNEMONIC =
-  "candy maple cake sugar pudding cream honey rich smooth crumble sweet treat";
-
-let developmentProvider;
-
-function getDevelopmentProvider() {
-  if (!developmentProvider) {
-    developmentProvider = ganache.provider({
-      chain: {
-        chainId: 1337,
-        networkId: 1337,
-      },
-      logging: { quiet: true },
-      wallet: {
-        mnemonic: DEVELOPMENT_MNEMONIC,
-        totalAccounts: 10,
-      },
-    });
-  }
-
-  return developmentProvider;
-}
 
 module.exports = {
   /**
@@ -89,9 +65,11 @@ module.exports = {
     // options below to some value.
     //
     development: {
-      provider: getDevelopmentProvider,
-      network_id: 1337,
-    },
+      host: "127.0.0.1",
+      port: 8545,
+      network_id: "*",
+      gas: 6721975 * 2, // Ganache's default block gas limit is 6721975, so we set it to double for safety
+    }
     //
     // An additional network, but with some advanced options…
     // advanced: {

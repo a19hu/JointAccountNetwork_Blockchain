@@ -1,6 +1,6 @@
 const JointAccountNetwork = artifacts.require("JointAccountNetwork");
 
-const NUM_USERS = 1;
+const NUM_USERS = 100;
 const TRANSACTION_COUNT = 1000;
 const MEAN_BALANCE = 10;
 const ATTACHMENT_EDGES = 2;
